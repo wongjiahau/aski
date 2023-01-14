@@ -1,34 +1,90 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import './App.css'
+import * as React from "react";
+import { useState } from "react";
+import { list } from "./list";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [input, setInput] = useState("");
+
+  const [words, setWords] = useState([] as string[]);
+
+  const entries = Object.entries(list).map(([character, recipe]) => ({
+    character,
+    recipe,
+  }));
+
+  const duplicates = entries.flatMap((entry) => {
+    const duplicated = entries.find(
+      (entry$) =>
+        entry.character !== entry$.character && entry.recipe === entry$.recipe
+    );
+    if (!duplicated) {
+      return [];
+    }
+    return [{ entry, duplicated }];
+  });
+
+  const matchingCharacters = Object.entries(list)
+    .flatMap(([character, recipe]) =>
+      recipe.startsWith(input) ? [{ character, recipe }] : []
+    )
+    .sort((a, b) => a.recipe.length - b.recipe.length)
+    .slice(0, 10);
+
+  console.log(input, matchingCharacters);
 
   return (
-    <div className="App">
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src="/vite.svg" className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://reactjs.org" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <div
+      style={{
+        display: "grid",
+        justifyContent: "center",
+        width: "100vw",
+        height: "100vh",
+        alignContent: "start",
+        padding: 32,
+        gap: 32,
+        fontSize: 36,
+      }}
+    >
+      <input
+        type="text"
+        value={input}
+        style={{ fontSize: 36 }}
+        onChange={(event) => setInput(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            setWords([...words, matchingCharacters[0].character]);
+            setInput("");
+          }
+        }}
+      />
+      {words.join("")}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "auto auto",
+          gap: 32,
+          color: "red",
+        }}
+      >
+        {duplicates.map((entry, index) => (
+          <React.Fragment key={index}>
+            <div>{entry.entry.character}</div>
+            <div>{entry.duplicated.recipe}</div>
+          </React.Fragment>
+        ))}
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
+      <div
+        style={{ display: "grid", gridTemplateColumns: "auto auto", gap: 32 }}
+      >
+        {matchingCharacters.map(({ character, recipe }, index) => (
+          <React.Fragment key={index}>
+            <div> {character} </div>
+            <div> {recipe} </div>
+          </React.Fragment>
+        ))}
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
