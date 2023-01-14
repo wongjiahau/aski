@@ -15,7 +15,9 @@ function App() {
   const duplicates = entries.flatMap((entry) => {
     const duplicated = entries.find(
       (entry$) =>
-        entry.character !== entry$.character && entry.recipe === entry$.recipe
+        entry.character !== entry$.character &&
+        entry.recipe[0] === entry$.recipe[0] &&
+        entry.recipe[1] === entry$.recipe[1]
     );
     if (!duplicated) {
       return [];
@@ -23,15 +25,37 @@ function App() {
     return [{ entry, duplicated }];
   });
 
-  const matchingCharacters = Object.entries(list)
+  const primaryMatchingCharacters = Object.entries(list)
     .flatMap(([character, recipe]) =>
-      recipe.startsWith(input) ? [{ character, recipe }] : []
+      recipe[0]?.startsWith(input) ||
+      (recipe[0] + "/" + recipe[1]).startsWith(input)
+        ? [{ character, recipe }]
+        : []
     )
-    .sort((a, b) => a.recipe.length - b.recipe.length)
-    .slice(0, 10);
+    .sort((a, b) => {
+      const rank = a.recipe[0].localeCompare(b.recipe[0]);
+      if (rank !== 0) {
+        return rank;
+      }
+      return (a.recipe[1] ?? "").localeCompare(b.recipe[1] ?? "") ?? 0;
+    });
 
-  console.log(input, matchingCharacters);
+  const secondaryMatchingCharacters = Object.entries(list)
+    .flatMap(([character, recipe]) =>
+      recipe[1]?.startsWith(input) ? [{ character, recipe }] : []
+    )
+    .sort((a, b) => {
+      const rank = a.recipe[0].localeCompare(b.recipe[0]);
+      if (rank !== 0) {
+        return rank;
+      }
+      return (a.recipe[1] ?? "").localeCompare(b.recipe[1] ?? "") ?? 0;
+    });
 
+  const matchingCharacters = [
+    ...primaryMatchingCharacters,
+    ...secondaryMatchingCharacters,
+  ].slice(0, 10);
   return (
     <div
       style={{
@@ -61,7 +85,7 @@ function App() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "auto auto",
+          gridTemplateColumns: "auto auto auto",
           gap: 32,
           color: "red",
         }}
@@ -69,7 +93,8 @@ function App() {
         {duplicates.map((entry, index) => (
           <React.Fragment key={index}>
             <div>{entry.entry.character}</div>
-            <div>{entry.duplicated.recipe}</div>
+            <div>{entry.duplicated.recipe[0]}</div>
+            <div>{entry.duplicated.recipe[1]}</div>
           </React.Fragment>
         ))}
       </div>
@@ -79,7 +104,16 @@ function App() {
         {matchingCharacters.map(({ character, recipe }, index) => (
           <React.Fragment key={index}>
             <div> {character} </div>
-            <div> {recipe} </div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "auto auto",
+                justifyContent: "start",
+              }}
+            >
+              <div> {recipe[0]} </div>
+              {recipe[1] && <div> /{recipe[1]} </div>}
+            </div>
           </React.Fragment>
         ))}
       </div>
